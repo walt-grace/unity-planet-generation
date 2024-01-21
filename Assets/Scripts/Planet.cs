@@ -1,13 +1,12 @@
 using UnityEngine;
 
 public class Planet : MonoBehaviour {
-    [Range(0, 256)]
-    public int resolution = 10;
-    const int MeshFiltersNumber = 6;
-
     [SerializeField, HideInInspector]
     MeshFilter[] meshFilters;
     TerrainFace[] _terrainFaces;
+
+    [Range(1, 256)]
+    public int resolution = 10;
 
     [HideInInspector]
     public bool shapeSettingsFoldout;
@@ -17,6 +16,8 @@ public class Planet : MonoBehaviour {
     public ShapeSettings shapeSettings;
     public ColorSettings colorSettings;
 
+    const int MeshFiltersNumber = 6;
+
     /**
      *
      */
@@ -24,17 +25,20 @@ public class Planet : MonoBehaviour {
         if (meshFilters == null || meshFilters.Length == 0) {
             meshFilters = new MeshFilter[MeshFiltersNumber];
         }
+
         _terrainFaces = new TerrainFace[MeshFiltersNumber];
         Vector3[] directions = { Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back };
         for (int i = 0; i < MeshFiltersNumber; i++) {
-            if (meshFilters[i] == null) {
+            if (!meshFilters[i]) {
                 GameObject meshObj = new("mesh");
                 meshObj.transform.parent = transform;
                 meshObj.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Standard"));
                 meshFilters[i] = meshObj.AddComponent<MeshFilter>();
                 meshFilters[i].sharedMesh = new Mesh();
             }
-            _terrainFaces[i] = new TerrainFace(meshFilters[i].sharedMesh, resolution, directions[i], shapeSettings.radius);
+
+            _terrainFaces[i] =
+                new TerrainFace(meshFilters[i].sharedMesh, resolution, directions[i], shapeSettings.radius);
         }
     }
 
@@ -55,6 +59,7 @@ public class Planet : MonoBehaviour {
             terrainFace.ConstructMesh();
         }
     }
+
     /**
      *
      */
@@ -67,7 +72,7 @@ public class Planet : MonoBehaviour {
     /**
      *
      */
-    public void OnColorSettingsUpdated() {
+    public void OnShapeSettingsUpdated() {
         Initialize();
         GenerateMesh();
     }
@@ -75,7 +80,7 @@ public class Planet : MonoBehaviour {
     /**
      *
      */
-    public void OnShapeSettingsUpdated() {
+    public void OnColorSettingsUpdated() {
         Initialize();
         GenerateColors();
     }

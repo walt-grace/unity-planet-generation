@@ -1,6 +1,5 @@
 using System;
 using UnityEditor;
-using UnityEditor.TerrainTools;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -10,32 +9,30 @@ public class PlanetEditor : Editor {
     Editor _shapeEditor;
     Editor _colorEditor;
 
+    void OnEnable() {
+        _planet = (Planet)target;
+    }
+
     public override void OnInspectorGUI() {
-        base.OnInspectorGUI();
         using EditorGUI.ChangeCheckScope check = new();
-        if (check.changed) {
-            _planet.GeneratePlanet();
-        }
-        if (GUILayout.Button("Generate Planet")) {
-            _planet.GeneratePlanet();
-        }
-        DrawSettingsEditor(_shapeEditor, _planet.OnShapeSettingsUpdated, ref _planet.shapeSettingsFoldout, ref _shapeEditor);
-        DrawSettingsEditor(_colorEditor, _planet.OnColorSettingsUpdated, ref _planet.colourSettingsFoldout, ref _colorEditor);
+        base.OnInspectorGUI();
+        if (check.changed) _planet.GeneratePlanet();
+        if (GUILayout.Button("Generate Planet")) _planet.GeneratePlanet();
+        DrawSettingsEditor(_planet.shapeSettings, _planet.OnShapeSettingsUpdated, ref _planet.shapeSettingsFoldout, ref _shapeEditor);
+        DrawSettingsEditor(_planet.colorSettings, _planet.OnColorSettingsUpdated, ref _planet.colourSettingsFoldout, ref _colorEditor);
     }
 
     /**
      *
      */
-    void DrawSettingsEditor(Object settings, Action onSettingsUpdate, ref bool foldout, ref Editor editor) {
-        if (settings == null || onSettingsUpdate == null || !foldout) return;
+    void DrawSettingsEditor(Object settings, Action onSettingsUpdated, ref bool foldout, ref Editor editor) {
+        if (settings == null || onSettingsUpdated == null) return;
+        foldout = EditorGUILayout.InspectorTitlebar(foldout, settings);
         using EditorGUI.ChangeCheckScope check = new();
-        Editor editor2 = CreateEditor(settings);
-        editor2.OnInspectorGUI();
+        if (!foldout) return;
+        CreateCachedEditor(settings, null, ref editor);
+        editor.OnInspectorGUI();
         if (!check.changed) return;
-        onSettingsUpdate();
-    }
-
-    void OnEnable() {
-        _planet = (Planet) target;
+        onSettingsUpdated.Invoke();
     }
 }

@@ -3,7 +3,7 @@ using UnityEngine;
 public class Planet : MonoBehaviour {
     [SerializeField, HideInInspector]
     MeshFilter[] meshFilters;
-    TerrainFace[] _terrainFaces;
+    ShapeGenerator[] _terrainFaces;
 
     [Range(1, 256)]
     public int resolution = 10;
@@ -26,7 +26,7 @@ public class Planet : MonoBehaviour {
             meshFilters = new MeshFilter[MeshFiltersNumber];
         }
 
-        _terrainFaces = new TerrainFace[MeshFiltersNumber];
+        _terrainFaces = new ShapeGenerator[MeshFiltersNumber];
         Vector3[] directions = { Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back };
         for (int i = 0; i < MeshFiltersNumber; i++) {
             if (!meshFilters[i]) {
@@ -37,8 +37,7 @@ public class Planet : MonoBehaviour {
                 meshFilters[i].sharedMesh = new Mesh();
             }
 
-            _terrainFaces[i] =
-                new TerrainFace(meshFilters[i].sharedMesh, resolution, directions[i], shapeSettings.radius);
+            _terrainFaces[i] = new ShapeGenerator(meshFilters[i].sharedMesh, resolution, directions[i], shapeSettings);
         }
     }
 
@@ -55,7 +54,7 @@ public class Planet : MonoBehaviour {
      *
      */
     void GenerateMesh() {
-        foreach (TerrainFace terrainFace in _terrainFaces) {
+        foreach (ShapeGenerator terrainFace in _terrainFaces) {
             terrainFace.ConstructMesh();
         }
     }

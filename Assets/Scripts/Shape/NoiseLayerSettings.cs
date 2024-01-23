@@ -8,7 +8,7 @@ public enum NoiseType {
 
 [System.Serializable]
 public class NoiseLayerSettings {
-    public bool enabled = true;
+    public bool enabled;
     [Range(1, 8)]
     public int numberOfLayers;
     public bool useFirstLayerAsMask;

@@ -12,27 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9ceb755d3a5428da1824e3408b2d29e, type: 3}
   m_Name: Shape
   m_EditorClassIdentifier: 
-  radius: 55
-  noiseLayers:
+  radius: 111
+  noiseSettings:
   - enabled: 1
-    useFirstLayerAsMask: 1
-    noiseSettings:
-      numberOfLayers: 4
-      noiseType: 0
-      strength: 0.2
-      persistence: 0.53
-      baseRoughness: 0.5
-      roughness: 2.27
-      minValue: 1.23
-      center: {x: 0, y: 0, z: 0}
-  - enabled: 1
-    useFirstLayerAsMask: 1
-    noiseSettings:
-      numberOfLayers: 4
-      noiseType: 1
-      strength: 1.44
-      persistence: 1.1
-      baseRoughness: 1.49
-      roughness: 2.27
-      minValue: 1.23
-      center: {x: 0, y: 0, z: 0}
+    numberOfLayers: 1
+    useFirstLayerAsMask: 0
+    noiseType: 0
+    strength: -0.4
+    persistence: 0.67
+    baseRoughness: 0.68
+    roughness: 3.74
+    minValue: 0.5
+    center: {x: -0.08, y: 0.37, z: 0}

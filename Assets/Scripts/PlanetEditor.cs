@@ -8,6 +8,8 @@ public class PlanetEditor : Editor {
     Planet _planet;
     Editor _shapeEditor;
     Editor _colorEditor;
+    bool _shapeSettingsFoldout;
+    bool _colorSettingsFoldout;
 
     void OnEnable() {
         _planet = (Planet)target;
@@ -18,14 +20,14 @@ public class PlanetEditor : Editor {
         base.OnInspectorGUI();
         if (check.changed) _planet.GeneratePlanet();
         if (GUILayout.Button("Generate Planet")) _planet.GeneratePlanet();
-        DrawSettingsEditor(_planet.shapeSettings, _planet.OnShapeSettingsUpdated, ref _planet.shapeSettingsFoldout, ref _shapeEditor);
-        DrawSettingsEditor(_planet.colorSettings, _planet.OnColorSettingsUpdated, ref _planet.colourSettingsFoldout, ref _colorEditor);
+        DrawSettingsEditor(_planet.shapeSettings, _planet.GenerateMeshes, ref _shapeSettingsFoldout, ref _shapeEditor);
+        DrawSettingsEditor(_planet.colorSettings, _planet.GenerateColors, ref _colorSettingsFoldout, ref _colorEditor);
     }
 
     /**
      *
      */
-    void DrawSettingsEditor(Object settings, Action onSettingsUpdated, ref bool foldout, ref Editor editor) {
+    static void DrawSettingsEditor(Object settings, Action onSettingsUpdated, ref bool foldout, ref Editor editor) {
         if (settings == null || onSettingsUpdated == null) return;
         foldout = EditorGUILayout.InspectorTitlebar(foldout, settings);
         using EditorGUI.ChangeCheckScope check = new();

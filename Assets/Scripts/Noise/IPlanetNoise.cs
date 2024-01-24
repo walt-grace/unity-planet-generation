@@ -6,10 +6,10 @@ public interface IPlanetNoise {
     /**
      *
      */
-    public static IPlanetNoise New(NoiseLayerSettings layerSettings) {
-        return layerSettings.noiseType switch {
-            NoiseType.Simple => new SimplePlanetNoise(layerSettings),
-            NoiseType.Ridge => new RidgePlanetNoise(layerSettings),
+    public static IPlanetNoise New(NoiseLayer layer) {
+        return layer.noiseType switch {
+            NoiseType.Simple => new SimplePlanetNoise(layer),
+            NoiseType.Ridge => new RidgePlanetNoise(layer),
             _ => null
         };
     }

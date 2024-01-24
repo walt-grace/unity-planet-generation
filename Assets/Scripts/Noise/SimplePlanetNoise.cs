@@ -2,24 +2,24 @@ using UnityEngine;
 
 public class SimplePlanetNoise : IPlanetNoise {
     readonly Noise _noise = new();
-    readonly NoiseLayerSettings _noiseLayerSettings;
+    readonly NoiseLayer _noiseLayer;
 
-    public SimplePlanetNoise(NoiseLayerSettings noiseLayerSettings) {
-        _noiseLayerSettings = noiseLayerSettings;
+    public SimplePlanetNoise(NoiseLayer noiseLayer) {
+        _noiseLayer = noiseLayer;
     }
 
     public float Evaluate(Vector3 point) {
         float noiseValue = 0;
-        float frequency = _noiseLayerSettings.baseRoughness;
+        float frequency = _noiseLayer.baseRoughness;
         float amplitude = 1;
-        for (int i = 0; i < _noiseLayerSettings.numberOfLayers; i++) {
-            frequency *= _noiseLayerSettings.roughness;
-            amplitude *= _noiseLayerSettings.persistence;
-            float v = _noise.Evaluate(point * frequency + _noiseLayerSettings.center);
+        for (int i = 0; i < _noiseLayer.numberOfLayers; i++) {
+            frequency *= _noiseLayer.roughness;
+            amplitude *= _noiseLayer.persistence;
+            float v = _noise.Evaluate(point * frequency + _noiseLayer.center);
             noiseValue += (v + 1) * .5f * amplitude;
         }
 
-        noiseValue = Mathf.Max(0, noiseValue - _noiseLayerSettings.minValue);
-        return noiseValue * _noiseLayerSettings.strength;
+        noiseValue = Mathf.Max(0, noiseValue - _noiseLayer.minValue);
+        return noiseValue * _noiseLayer.strength;
     }
 }

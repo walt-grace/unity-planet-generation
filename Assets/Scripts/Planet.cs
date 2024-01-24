@@ -8,13 +8,15 @@ public class Planet : MonoBehaviour {
     public Material planetMaterial;
 
     const int PlanetFaces = 6;
+    const int TextureResolution = 50;
     readonly List<MeshFilter> _meshFilters = new(PlanetFaces);
-    readonly List<MeshRenderer> _meshRenderers = new(PlanetFaces);
+    public Texture2D texture;
 
-    float _minElevation;
-    float _maxElevation;
+    float _minElevation = float.MaxValue;
+    float _maxElevation = float.MinValue;
 
-    static readonly int MinMaxElevation = Shader.PropertyToID("_elevationMinMax");
+    readonly int _minMaxElevationID = Shader.PropertyToID("_elevationMinMax");
+    readonly int _textureID = Shader.PropertyToID("_texture");
     readonly List<Vector3> _directions = new() {
         Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back
     };
@@ -23,19 +25,25 @@ public class Planet : MonoBehaviour {
      *
      */
     public void GeneratePlanet() {
+        texture = new Texture2D(TextureResolution, 1);
         List<IPlanetNoise> noiseFilters = new();
-        foreach (NoiseLayerSettings noiseLayerSettings in planetSettings.noiseLayerSettings) {
+        foreach (NoiseLayer noiseLayerSettings in planetSettings.noiseLayers) {
             noiseFilters.Add(IPlanetNoise.New(noiseLayerSettings));
         }
-        _minElevation = 0;
-        _maxElevation = 0;
+        _minElevation = float.MaxValue;
+        _maxElevation = float.MinValue;
         for (int i = 0; i < _meshFilters.Count; i++) {
             MeshFilter meshFilter = _meshFilters[i];
             ConstructMesh(meshFilter.sharedMesh, _directions[i], noiseFilters);
-            MeshRenderer meshRenderer = _meshRenderers[i];
-            meshRenderer.sharedMaterial.color = planetSettings.color;
         }
-        planetMaterial.SetVector(MinMaxElevation, new Vector4(_minElevation, _maxElevation));
+        planetMaterial.SetVector(_minMaxElevationID, new Vector4(_minElevation, _maxElevation));
+        Color[] colors = new Color[TextureResolution];
+        for (int i = 0; i < TextureResolution; i++) {
+            colors[i] = planetSettings.gradient.Evaluate(i / (TextureResolution - 1f));
+        }
+        texture.SetPixels(colors);
+        texture.Apply();
+        planetMaterial.SetTexture(_textureID, texture);
     }
 
     /**
@@ -82,15 +90,15 @@ public class Planet : MonoBehaviour {
         float elevation = 0;
         float firstLayerValue = 0;
         // First layer
-        if (planetSettings.noiseLayerSettings is { Count: > 0 } && planetSettings.noiseLayerSettings[0].enabled) {
+        if (planetSettings.noiseLayers is { Count: > 0 } && planetSettings.noiseLayers[0].enabled) {
             firstLayerValue = noiseFilters[0].Evaluate(pointOnUnitSphere);
             elevation = firstLayerValue;
         }
         // The rest of the layers
-        if (planetSettings.noiseLayerSettings is { Count: > 0 }) {
-            for (int i = 1; i < planetSettings.noiseLayerSettings.Count; i++) {
-                if (!planetSettings.noiseLayerSettings[i].enabled) continue;
-                float mask = planetSettings.noiseLayerSettings[i].useFirstLayerAsMask ? firstLayerValue : 1;
+        if (planetSettings.noiseLayers is { Count: > 0 }) {
+            for (int i = 1; i < planetSettings.noiseLayers.Count; i++) {
+                if (!planetSettings.noiseLayers[i].enabled) continue;
+                float mask = planetSettings.noiseLayers[i].useFirstLayerAsMask ? firstLayerValue : 1;
                 elevation += noiseFilters[i].Evaluate(pointOnUnitSphere) * mask;
             }
         }
@@ -107,7 +115,6 @@ public class Planet : MonoBehaviour {
             DestroyImmediate(transform.GetChild(0).gameObject);
         }
         _meshFilters.Clear();
-        _meshRenderers.Clear();
         for (int i = 0; i < PlanetFaces; i++) {
             GameObject planetSide = new("PlanetSide" + i);
             planetSide.transform.parent = transform;
@@ -118,7 +125,6 @@ public class Planet : MonoBehaviour {
             // Add mesh renderer
             MeshRenderer meshRenderer = planetSide.AddComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = planetMaterial;
-            _meshRenderers.Add(meshRenderer);
         }
     }
 

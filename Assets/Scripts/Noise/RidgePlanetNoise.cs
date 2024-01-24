@@ -2,28 +2,28 @@ using UnityEngine;
 
 public class RidgePlanetNoise : IPlanetNoise {
     readonly Noise _noise = new();
-    readonly NoiseLayerSettings _noiseLayerSettings;
+    readonly NoiseLayer _noiseLayer;
 
-    public RidgePlanetNoise(NoiseLayerSettings noiseLayerSettings) {
-        _noiseLayerSettings = noiseLayerSettings;
+    public RidgePlanetNoise(NoiseLayer noiseLayer) {
+        _noiseLayer = noiseLayer;
     }
 
     public float Evaluate(Vector3 point) {
-        float frequency = _noiseLayerSettings.baseRoughness;
+        float frequency = _noiseLayer.baseRoughness;
         float weight = 1;
         float amplitude = 1;
         float noiseValue = 0;
-        for (int i = 0; i < _noiseLayerSettings.numberOfLayers; i++) {
-            float v = 1 - Mathf.Abs(_noise.Evaluate(point * frequency + _noiseLayerSettings.center));
+        for (int i = 0; i < _noiseLayer.numberOfLayers; i++) {
+            float v = 1 - Mathf.Abs(_noise.Evaluate(point * frequency + _noiseLayer.center));
             v *= v;
             v *= weight;
             weight = v;
             noiseValue += v * amplitude;
-            frequency *= _noiseLayerSettings.roughness;
-            amplitude *= _noiseLayerSettings.persistence;
+            frequency *= _noiseLayer.roughness;
+            amplitude *= _noiseLayer.persistence;
         }
 
-        noiseValue = Mathf.Max(0, noiseValue - _noiseLayerSettings.minValue);
-        return noiseValue * _noiseLayerSettings.strength;
+        noiseValue = Mathf.Max(0, noiseValue - _noiseLayer.minValue);
+        return noiseValue * _noiseLayer.strength;
     }
 }

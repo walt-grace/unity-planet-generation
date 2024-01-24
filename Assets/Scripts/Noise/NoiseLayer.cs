@@ -7,7 +7,7 @@ public enum NoiseType {
 }
 
 [System.Serializable]
-public class NoiseLayerSettings {
+public class NoiseLayer {
     public bool enabled;
     [Range(1, 8)]
     public int numberOfLayers;

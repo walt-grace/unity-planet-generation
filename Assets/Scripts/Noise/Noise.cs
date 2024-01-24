@@ -31,6 +31,8 @@ Some changes by Sebastian Lague for use in a tutorial series.
 */
 
 using System;
+using UnityEngine;
+
 public class Noise
 {
     #region Values
@@ -98,7 +100,7 @@ public class Noise
     /// <summary>
     /// Generates value, typically in range [-1, 1]
     /// </summary>
-    public float Evaluate(UnityEngine.Vector3 point)
+    public float Evaluate(Vector3 point)
     {
         double x = point.x;
         double y = point.y;

@@ -1,12 +1,13 @@
+using System;
 using UnityEngine;
 
-[System.Serializable]
+[Serializable]
 public enum NoiseType {
     Simple,
     Ridge
 }
 
-[System.Serializable]
+[Serializable]
 public class NoiseLayerSettings {
     public bool enabled;
     [Range(1, 8)]

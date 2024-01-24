@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class Planet : MonoBehaviour {
     [HideInInspector]
@@ -9,13 +8,13 @@ public class Planet : MonoBehaviour {
     public Material planetMaterial;
 
     const int PlanetFaces = 6;
-    public List<MeshFilter> meshFilters = new(PlanetFaces);
-    public List<MeshRenderer> meshRenderers = new(PlanetFaces);
+    readonly List<MeshFilter> _meshFilters = new(PlanetFaces);
+    readonly List<MeshRenderer> _meshRenderers = new(PlanetFaces);
 
-    float _maxElevation;
     float _minElevation;
+    float _maxElevation;
 
-    static readonly int MinMaxElevation = Shader.PropertyToID("_minMaxElevation");
+    static readonly int MinMaxElevation = Shader.PropertyToID("_elevationMinMax");
     readonly List<Vector3> _directions = new() {
         Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back
     };
@@ -30,10 +29,10 @@ public class Planet : MonoBehaviour {
         }
         _minElevation = 0;
         _maxElevation = 0;
-        for (int i = 0; i < meshFilters.Count; i++) {
-            MeshFilter meshFilter = meshFilters[i];
+        for (int i = 0; i < _meshFilters.Count; i++) {
+            MeshFilter meshFilter = _meshFilters[i];
             ConstructMesh(meshFilter.sharedMesh, _directions[i], noiseFilters);
-            MeshRenderer meshRenderer = meshRenderers[i];
+            MeshRenderer meshRenderer = _meshRenderers[i];
             meshRenderer.sharedMaterial.color = planetSettings.color;
         }
         planetMaterial.SetVector(MinMaxElevation, new Vector4(_minElevation, _maxElevation));
@@ -107,19 +106,19 @@ public class Planet : MonoBehaviour {
         while (transform.childCount > 0) {
             DestroyImmediate(transform.GetChild(0).gameObject);
         }
-        meshFilters.Clear();
-        meshRenderers.Clear();
+        _meshFilters.Clear();
+        _meshRenderers.Clear();
         for (int i = 0; i < PlanetFaces; i++) {
             GameObject planetSide = new("PlanetSide" + i);
             planetSide.transform.parent = transform;
             // Add mesh filter
             MeshFilter meshFilter = planetSide.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = new Mesh();
-            meshFilters.Add(meshFilter);
+            _meshFilters.Add(meshFilter);
             // Add mesh renderer
             MeshRenderer meshRenderer = planetSide.AddComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = planetMaterial;
-            meshRenderers.Add(meshRenderer);
+            _meshRenderers.Add(meshRenderer);
         }
     }
 
@@ -129,7 +128,8 @@ public class Planet : MonoBehaviour {
     void SetMinMaxElevation(float elevation) {
         if (elevation < _minElevation) {
             _minElevation = elevation;
-        } else if (elevation > _maxElevation) {
+        }
+        if (elevation > _maxElevation) {
             _maxElevation = elevation;
         }
     }
@@ -144,9 +144,8 @@ public class Planet : MonoBehaviour {
         if (!planetMaterial) {
             planetMaterial = Resources.Load<Material>("PlanetMaterial");
         }
-        if (transform.childCount != PlanetFaces) {
-            InitializePlanetSides();
-            // GeneratePlanet();
-        }
+        if (transform.childCount == PlanetFaces) return;
+        InitializePlanetSides();
+        GeneratePlanet();
     }
 }

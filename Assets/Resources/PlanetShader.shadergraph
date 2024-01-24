@@ -626,7 +626,7 @@
     "m_DefaultRefNameVersion": 1,
     "m_RefNameGeneratedByDisplayName": "ElevationMinMax",
     "m_DefaultReferenceName": "_ElevationMinMax",
-    "m_OverrideReferenceName": "",
+    "m_OverrideReferenceName": "_elevationMinMax",
     "m_GeneratePropertyBlock": true,
     "m_UseCustomSlotLabel": false,
     "m_CustomSlotLabel": "",
@@ -886,10 +886,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 0.0,
-            "y": 0.0,
-            "width": 0.0,
-            "height": 0.0
+            "x": 677.0,
+            "y": -133.0,
+            "width": 200.0,
+            "height": 41.0
         }
     },
     "m_Slots": [

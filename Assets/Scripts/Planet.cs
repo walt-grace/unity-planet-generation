@@ -9,7 +9,6 @@ public class Planet : MonoBehaviour {
     public Material planetMaterial;
 
     const int PlanetFaces = 6;
-
     public List<MeshFilter> meshFilters = new(PlanetFaces);
     public List<MeshRenderer> meshRenderers = new(PlanetFaces);
 
@@ -147,7 +146,7 @@ public class Planet : MonoBehaviour {
         }
         if (transform.childCount != PlanetFaces) {
             InitializePlanetSides();
-            GeneratePlanet();
+            // GeneratePlanet();
         }
     }
 }

@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9ceb755d3a5428da1824e3408b2d29e, type: 3}
+  m_Name: PlanetSettings
+  m_EditorClassIdentifier: 
+  radius: 123
+  color: {r: 0, g: 0, b: 0, a: 0}
+  noiseLayerSettings:
+  - enabled: 1
+    numberOfLayers: 4
+    useFirstLayerAsMask: 0
+    noiseType: 0
+    strength: 0.81
+    persistence: 0.73
+    baseRoughness: 1.49
+    roughness: 1.34
+    minValue: 1
+    center: {x: 0.35, y: 0, z: 0}
+  - enabled: 1
+    numberOfLayers: 4
+    useFirstLayerAsMask: 0
+    noiseType: 1
+    strength: 0.24
+    persistence: 0.73
+    baseRoughness: 1.49
+    roughness: 1.34
+    minValue: 1
+    center: {x: 0.35, y: 0, z: 0}

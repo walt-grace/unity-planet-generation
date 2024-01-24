@@ -11,13 +11,13 @@ public class PlanetEditor : Editor {
 
     void OnEnable() {
         _planet = (Planet)target;
+        _planet.InitializePlanet();
     }
 
     public override void OnInspectorGUI() {
         using EditorGUI.ChangeCheckScope check = new();
         base.OnInspectorGUI();
-        bool button = GUILayout.Button("Generate Planet");
-        if (check.changed || button) {
+        if (check.changed || GUILayout.Button("Generate Planet")) {
             _planet.GeneratePlanet();
             return;
         }

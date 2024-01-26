@@ -16,15 +16,11 @@ public class Planet : MonoBehaviour {
     float _minElevation = float.MaxValue;
     float _maxElevation = float.MinValue;
 
-    readonly List<Vector3> _directions = new() {
-        Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back
-    };
-
 
     /**
      *
      */
-    public void GeneratePlanet() {
+    public void UpdatePlanet() {
         SetPlanetSides();
         SetBiomeTextures();
         planetMaterial.SetVector(PlanetGenerator.MinMaxElevationID, new Vector4(_minElevation, _maxElevation));
@@ -43,7 +39,7 @@ public class Planet : MonoBehaviour {
         }
         // Mesh
         for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
-            ConstructPlanetSide(_meshFilters[i].sharedMesh, _directions[i], noiseFilters);
+            ConstructPlanetSide(_meshFilters[i].sharedMesh, PlanetGenerator.Directions[i], noiseFilters);
         }
     }
 
@@ -112,7 +108,7 @@ public class Planet : MonoBehaviour {
      */
     void SetBiomeTextures() {
         for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
-            UpdateBiomeUV(_meshFilters[i].sharedMesh, _directions[i]);
+            UpdateBiomeUV(_meshFilters[i].sharedMesh, PlanetGenerator.Directions[i]);
         }
         int biomesCount = biomes.Count;
         texture = new Texture2D(PlanetGenerator.PlanetTextureResolution, biomesCount, TextureFormat.RGBA32, false);
@@ -167,8 +163,8 @@ public class Planet : MonoBehaviour {
     /**
      *
      */
-    public void InitializePlanet(PlanetSettings newPlanetSettings) {
-        planetMaterial = Resources.Load<Material>("PlanetMaterial");
+    public void InitializePlanet(Shader shader) {
+        planetMaterial = new Material(shader);
         SetupPlanetSides();
     }
 

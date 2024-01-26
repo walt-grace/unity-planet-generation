@@ -1,6 +1,33 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
+/**
+ *
+ */
+[CustomEditor(typeof(PlanetGenerator))]
+public class PlanetGeneratorEditor : Editor {
+    Editor _settingsEditor;
+    string _planetName = "Planet";
+    PlanetGenerator _planetGenerator;
+
+    void OnEnable() {
+        _planetGenerator = (PlanetGenerator)target;
+    }
+
+    public override void OnInspectorGUI() {
+        DrawDefaultInspector();
+        _planetName = EditorGUILayout.TextField("Planet Name", _planetName);
+        if (GUILayout.Button("Generate Planet")) {
+            _planetGenerator.CreatePlanet(_planetName);
+            _planetName = "Planet";
+        }
+    }
+}
+
+/**
+ *
+ */
 [CustomEditor(typeof(Planet))]
 public class PlanetEditor : Editor {
     Planet _planet;
@@ -13,29 +40,7 @@ public class PlanetEditor : Editor {
     public override void OnInspectorGUI() {
         DrawDefaultInspector();
         if (GUI.changed) {
-            _planet.GeneratePlanet();
-        }
-    }
-}
-
-/**
- *
- */
-[CustomEditor(typeof(PlanetGenerator))]
-public class PlanetGeneratorEditor : Editor {
-    Editor _settingsEditor;
-    PlanetSettings _planetSettings;
-
-    public override void OnInspectorGUI() {
-        DrawDefaultInspector();
-        if (!_planetSettings) {
-            _planetSettings = CreateInstance<PlanetSettings>();
-        }
-        CreateCachedEditor(_planetSettings, null, ref _settingsEditor);
-        _settingsEditor.OnInspectorGUI();
-        if (GUILayout.Button("Generate Planet")) {
-            PlanetGenerator.CreatePlanet(_planetSettings);
-            _planetSettings = null;
+            _planet.UpdatePlanet();
         }
     }
 }

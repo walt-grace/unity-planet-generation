@@ -2,30 +2,35 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Planet : MonoBehaviour {
-    [HideInInspector]
     public PlanetSettings planetSettings;
-    [HideInInspector]
     public Material planetMaterial;
 
-    const int PlanetFaces = 6;
-    const int TextureResolution = 50;
-    readonly List<MeshFilter> _meshFilters = new(PlanetFaces);
+    readonly List<MeshFilter> _meshFilters = new(PlanetGenerator.PlanetFaces);
     public Texture2D texture;
 
     float _minElevation = float.MaxValue;
     float _maxElevation = float.MinValue;
 
-    readonly int _minMaxElevationID = Shader.PropertyToID("_elevationMinMax");
-    readonly int _textureID = Shader.PropertyToID("_texture");
     readonly List<Vector3> _directions = new() {
         Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back
     };
+
+
+    /**
+     *
+     */
+    public void InitializePlanet(PlanetSettings newPlanetSettings) {
+        planetSettings = newPlanetSettings;
+        planetMaterial = Resources.Load<Material>("PlanetMaterial");
+        InitializePlanetSides();
+    }
 
     /**
      *
      */
     public void GeneratePlanet() {
-        texture = new Texture2D(TextureResolution, 1);
+        const int textureResolution = PlanetGenerator.PlanetTextureResolution;
+        texture = new Texture2D(textureResolution, 1);
         List<IPlanetNoise> noiseFilters = new();
         foreach (NoiseLayer noiseLayerSettings in planetSettings.noiseLayers) {
             noiseFilters.Add(IPlanetNoise.New(noiseLayerSettings));
@@ -36,14 +41,14 @@ public class Planet : MonoBehaviour {
             MeshFilter meshFilter = _meshFilters[i];
             ConstructMesh(meshFilter.sharedMesh, _directions[i], noiseFilters);
         }
-        planetMaterial.SetVector(_minMaxElevationID, new Vector4(_minElevation, _maxElevation));
-        Color[] colors = new Color[TextureResolution];
-        for (int i = 0; i < TextureResolution; i++) {
-            colors[i] = planetSettings.gradient.Evaluate(i / (TextureResolution - 1f));
+        planetMaterial.SetVector(PlanetGenerator.MinMaxElevationID, new Vector4(_minElevation, _maxElevation));
+        Color[] colors = new Color[textureResolution];
+        for (int i = 0; i < textureResolution; i++) {
+            colors[i] = planetSettings.gradient.Evaluate(i / (textureResolution - 1f));
         }
         texture.SetPixels(colors);
         texture.Apply();
-        planetMaterial.SetTexture(_textureID, texture);
+        planetMaterial.SetTexture(PlanetGenerator.TextureID, texture);
     }
 
     /**
@@ -115,7 +120,7 @@ public class Planet : MonoBehaviour {
             DestroyImmediate(transform.GetChild(0).gameObject);
         }
         _meshFilters.Clear();
-        for (int i = 0; i < PlanetFaces; i++) {
+        for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
             GameObject planetSide = new("PlanetSide" + i);
             planetSide.transform.parent = transform;
             // Add mesh filter
@@ -138,20 +143,5 @@ public class Planet : MonoBehaviour {
         if (elevation > _maxElevation) {
             _maxElevation = elevation;
         }
-    }
-
-    /**
-     *
-     */
-    public void InitializePlanet() {
-        if (!planetSettings) {
-            planetSettings = ScriptableObject.CreateInstance<PlanetSettings>();
-        }
-        if (!planetMaterial) {
-            planetMaterial = Resources.Load<Material>("PlanetMaterial");
-        }
-        if (transform.childCount == PlanetFaces) return;
-        InitializePlanetSides();
-        GeneratePlanet();
     }
 }

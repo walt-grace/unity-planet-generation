@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,7 +8,6 @@ public class PlanetEditor : Editor {
 
     void OnEnable() {
         _planet = (Planet)target;
-        _planet.InitializePlanet();
     }
 
     public override void OnInspectorGUI() {
@@ -17,8 +15,35 @@ public class PlanetEditor : Editor {
         using EditorGUI.ChangeCheckScope check = new();
         CreateCachedEditor(_planet.planetSettings, null, ref _settingsEditor);
         _settingsEditor.OnInspectorGUI();
-        if (check.changed || GUILayout.Button("Generate Planet")) {
+        if (check.changed) {
             _planet.GeneratePlanet();
+        }
+    }
+}
+
+/**
+ *
+ */
+[CustomEditor(typeof(PlanetGenerator))]
+public class PlanetGeneratorEditor : Editor {
+    PlanetGenerator _planetGenerator;
+    Editor _settingsEditor;
+    PlanetSettings _planetSettings;
+
+    void OnEnable() {
+        _planetGenerator = (PlanetGenerator)target;
+    }
+
+    public override void OnInspectorGUI() {
+        DrawDefaultInspector();
+        if (!_planetSettings) {
+            _planetSettings = CreateInstance<PlanetSettings>();
+        }
+        CreateCachedEditor(_planetSettings, null, ref _settingsEditor);
+        _settingsEditor.OnInspectorGUI();
+        if (GUILayout.Button("Generate Planet")) {
+            PlanetGenerator.CreatePlanet(_planetSettings);
+            _planetSettings = null;
         }
     }
 }

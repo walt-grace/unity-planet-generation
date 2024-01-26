@@ -3,6 +3,7 @@ using UnityEngine;
 
 [CreateAssetMenu]
 public class PlanetSettings : ScriptableObject {
+    public string planetName = "Planet";
     [Range(1, 256)]
     public int resolution = 30;
     public int radius = 10;

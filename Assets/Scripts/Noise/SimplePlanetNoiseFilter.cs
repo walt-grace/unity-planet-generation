@@ -1,10 +1,10 @@
 using UnityEngine;
 
-public class SimplePlanetNoise : IPlanetNoise {
+public class SimplePlanetNoiseFilter : IPlanetNoiseFilter {
     readonly Noise _noise = new();
     readonly NoiseLayer _noiseLayer;
 
-    public SimplePlanetNoise(NoiseLayer noiseLayer) {
+    public SimplePlanetNoiseFilter(NoiseLayer noiseLayer) {
         _noiseLayer = noiseLayer;
     }
 

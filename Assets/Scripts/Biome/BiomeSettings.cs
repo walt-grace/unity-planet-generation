@@ -1,10 +1,8 @@
 using UnityEngine;
-using UnityEngine.Serialization;
 
-[CreateAssetMenu]
-public class BiomeSettings : ScriptableObject {
+[System.Serializable]
+public class BiomeSettings {
     public Gradient gradient = new();
-    [FormerlySerializedAs("tintColor")]
     public Color tint;
     [Range(0, 1)]
     public float tintPercent;

@@ -2,7 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Planet : MonoBehaviour {
-    public PlanetSettings planetSettings;
+    public string planetName = "Planet";
+    [Range(1, 256)]
+    public int resolution = 30;
+    public int radius = 10;
+    public List<NoiseLayer> noiseLayers = new();
+    public List<BiomeSettings> biomes = new();
     public Material planetMaterial;
 
     readonly List<MeshFilter> _meshFilters = new(PlanetGenerator.PlanetFaces);
@@ -22,44 +27,33 @@ public class Planet : MonoBehaviour {
     public void GeneratePlanet() {
         SetPlanetSides();
         SetBiomeTextures();
-    }
-
-    /**
-     *
-     */
-    public void InitializePlanet(PlanetSettings newPlanetSettings) {
-        planetSettings = newPlanetSettings;
-        planetMaterial = Resources.Load<Material>("PlanetMaterial");
-        SetupPlanetSides();
+        planetMaterial.SetVector(PlanetGenerator.MinMaxElevationID, new Vector4(_minElevation, _maxElevation));
     }
 
     /**
      *
      */
     void SetPlanetSides() {
-        // Noise
-        List<IPlanetNoise> noiseFilters = new();
-        foreach (NoiseLayer noiseLayer in planetSettings.noiseLayers) {
-            noiseFilters.Add(IPlanetNoise.New(noiseLayer));
-        }
-        // Mesh
         _minElevation = float.MaxValue;
         _maxElevation = float.MinValue;
-        for (int i = 0; i < _meshFilters.Count; i++) {
-            MeshFilter meshFilter = _meshFilters[i];
-            ConstructPlanetSide(meshFilter.sharedMesh, _directions[i], noiseFilters);
+        // Noise
+        List<IPlanetNoiseFilter> noiseFilters = new();
+        foreach (NoiseLayer noiseLayer in noiseLayers) {
+            noiseFilters.Add(IPlanetNoiseFilter.New(noiseLayer));
         }
-        planetMaterial.SetVector(PlanetGenerator.MinMaxElevationID, new Vector4(_minElevation, _maxElevation));
+        // Mesh
+        for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
+            ConstructPlanetSide(_meshFilters[i].sharedMesh, _directions[i], noiseFilters);
+        }
     }
 
     /**
     *
     */
-    void ConstructPlanetSide(Mesh mesh, Vector3 localUp, IReadOnlyList<IPlanetNoise> noiseFilters) {
+    void ConstructPlanetSide(Mesh mesh, Vector3 localUp, IReadOnlyList<IPlanetNoiseFilter> noiseFilters) {
         int triangleIndex = 0;
         Vector3 axisA = new(localUp.y, localUp.z, localUp.x);
         Vector3 axisB = Vector3.Cross(localUp, axisA);
-        int resolution = planetSettings.resolution;
         Vector3[] vertices = new Vector3[resolution * resolution];
         int[] triangle = new int[(resolution - 1) * (resolution - 1) * 6];
         for (int x = 0; x < resolution; x++) {
@@ -69,8 +63,8 @@ public class Planet : MonoBehaviour {
                 Vector3 pointOnCube = localUp + (percent.x - .5f) * 2 * axisA + (percent.y - .5f) * 2 * axisB;
                 Vector3 pointOnSphere = pointOnCube.normalized;
                 vertices[i] = CalculatePointOnPlanet(pointOnSphere, noiseFilters);
-
                 if (x == resolution - 1 || y == resolution - 1) continue;
+
                 // Triangle 1
                 triangle[triangleIndex] = i;
                 triangle[triangleIndex + 1] = i + resolution + 1;
@@ -87,6 +81,95 @@ public class Planet : MonoBehaviour {
         mesh.vertices = vertices;
         mesh.triangles = triangle;
         mesh.RecalculateNormals();
+    }
+
+    /**
+    *
+    */
+    Vector3 CalculatePointOnPlanet(Vector3 pointOnUnitSphere, IReadOnlyList<IPlanetNoiseFilter> noiseFilters) {
+        float elevation = 0;
+        float firstLayerValue = 0;
+        // First layer
+        if (noiseLayers is { Count: > 0 } && noiseLayers[0].enabled) {
+            firstLayerValue = noiseFilters[0].Evaluate(pointOnUnitSphere);
+            elevation = firstLayerValue;
+        }
+        // The rest of the layers
+        if (noiseLayers is { Count: > 0 }) {
+            for (int i = 1; i < noiseLayers.Count; i++) {
+                if (!noiseLayers[i].enabled) continue;
+                float mask = noiseLayers[i].useFirstLayerAsMask ? firstLayerValue : 1;
+                elevation += noiseFilters[i].Evaluate(pointOnUnitSphere) * mask;
+            }
+        }
+        elevation = radius * (elevation + 1);
+        SetMinMaxElevation(elevation);
+        return pointOnUnitSphere * elevation;
+    }
+
+    /**
+     *
+     */
+    void SetBiomeTextures() {
+        for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
+            UpdateBiomeUV(_meshFilters[i].sharedMesh, _directions[i]);
+        }
+        int biomesCount = biomes.Count;
+        texture = new Texture2D(PlanetGenerator.PlanetTextureResolution, biomesCount, TextureFormat.RGBA32, false);
+        List<Color> colors = new(texture.width * texture.height);
+        foreach (BiomeSettings biomeSettings in biomes) {
+            for (int i = 0; i < PlanetGenerator.PlanetTextureResolution; i++) {
+                Color gradientColor = biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
+                Color color = gradientColor * (1 - biomeSettings.tintPercent) + biomeSettings.tint * biomeSettings.tintPercent;
+                colors.Add(color);
+            }
+        }
+        texture.SetPixels(colors.ToArray());
+        texture.Apply();
+        planetMaterial.SetTexture(PlanetGenerator.TextureID, texture);
+    }
+
+    /**
+     *
+     */
+    void UpdateBiomeUV(Mesh mesh, Vector3 localUp) {
+        Vector3 axisA = new(localUp.y, localUp.z, localUp.x);
+        Vector3 axisB = Vector3.Cross(localUp, axisA);
+        Vector2[] uv = new Vector2[resolution * resolution];
+        for (int x = 0; x < resolution; x++) {
+            for (int y = 0; y < resolution; y++) {
+                if (x == resolution - 1 || y == resolution - 1) continue;
+                int i = x + y * resolution;
+                Vector2 percent = new Vector2(x, y) / (resolution - 1);
+                Vector3 pointOnCube = localUp + (percent.x - .5f) * 2 * axisA + (percent.y - .5f) * 2 * axisB;
+                Vector3 pointOnSphere = pointOnCube.normalized;
+                uv[i] = new Vector2(CalculateBiomePercentage(pointOnSphere), 0);
+            }
+        }
+        mesh.uv = uv;
+    }
+
+    /**
+     *
+     */
+    float CalculateBiomePercentage(Vector3 point) {
+        float heightPercent = (point.y + 1) / 2f;
+        int biomesCount = biomes.Count;
+        for (int i = 0; i < biomesCount; i++) {
+            BiomeSettings biomeSettings = biomes[i];
+            if (biomeSettings.startHeight < heightPercent) {
+                return (float) i / Mathf.Max(1, biomesCount - 1);
+            }
+        }
+        return 0;
+    }
+
+    /**
+     *
+     */
+    public void InitializePlanet(PlanetSettings newPlanetSettings) {
+        planetMaterial = Resources.Load<Material>("PlanetMaterial");
+        SetupPlanetSides();
     }
 
     /**
@@ -108,49 +191,6 @@ public class Planet : MonoBehaviour {
             MeshRenderer meshRenderer = planetSide.AddComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = planetMaterial;
         }
-    }
-
-    /**
-    *
-    */
-    Vector3 CalculatePointOnPlanet(Vector3 pointOnUnitSphere, IReadOnlyList<IPlanetNoise> noiseFilters) {
-        float elevation = 0;
-        float firstLayerValue = 0;
-        // First layer
-        if (planetSettings.noiseLayers is { Count: > 0 } && planetSettings.noiseLayers[0].enabled) {
-            firstLayerValue = noiseFilters[0].Evaluate(pointOnUnitSphere);
-            elevation = firstLayerValue;
-        }
-        // The rest of the layers
-        if (planetSettings.noiseLayers is { Count: > 0 }) {
-            for (int i = 1; i < planetSettings.noiseLayers.Count; i++) {
-                if (!planetSettings.noiseLayers[i].enabled) continue;
-                float mask = planetSettings.noiseLayers[i].useFirstLayerAsMask ? firstLayerValue : 1;
-                elevation += noiseFilters[i].Evaluate(pointOnUnitSphere) * mask;
-            }
-        }
-        elevation = planetSettings.radius * (elevation + 1);
-        SetMinMaxElevation(elevation);
-        return pointOnUnitSphere * elevation;
-    }
-
-    /**
-     *
-     */
-    void SetBiomeTextures() {
-        int biomesCount = planetSettings.biomes.Count;
-        texture = new Texture2D(PlanetGenerator.PlanetTextureResolution, biomesCount);
-        List<Color> colors = new(texture.width * texture.height);
-        foreach (BiomeSettings biomeSettings in planetSettings.biomes) {
-            for (int i = 0; i < PlanetGenerator.PlanetTextureResolution; i++) {
-                Color gradientColor = biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
-                Color color = gradientColor * (1 - biomeSettings.tintPercent) + biomeSettings.tint * biomeSettings.tintPercent;
-                colors.Add(color);
-            }
-        }
-        texture.SetPixels(colors.ToArray());
-        texture.Apply();
-        planetMaterial.SetTexture(PlanetGenerator.TextureID, texture);
     }
 
     /**

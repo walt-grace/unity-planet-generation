@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlanetGenerator : MonoBehaviour {
@@ -17,4 +15,5 @@ public class PlanetGenerator : MonoBehaviour {
         planet.InitializePlanet(planetSettings);
         planet.GeneratePlanet();
     }
+
 }

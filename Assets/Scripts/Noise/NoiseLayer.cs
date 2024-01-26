@@ -19,4 +19,6 @@ public class NoiseLayer {
     public float roughness;
     public float minValue;
     public Vector3 center;
+
+
 }

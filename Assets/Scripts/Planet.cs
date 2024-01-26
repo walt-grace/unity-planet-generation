@@ -19,42 +19,43 @@ public class Planet : MonoBehaviour {
     /**
      *
      */
-    public void InitializePlanet(PlanetSettings newPlanetSettings) {
-        planetSettings = newPlanetSettings;
-        planetMaterial = Resources.Load<Material>("PlanetMaterial");
-        InitializePlanetSides();
+    public void GeneratePlanet() {
+        SetPlanetSides();
+        SetBiomeTextures();
     }
 
     /**
      *
      */
-    public void GeneratePlanet() {
-        const int textureResolution = PlanetGenerator.PlanetTextureResolution;
-        texture = new Texture2D(textureResolution, 1);
+    public void InitializePlanet(PlanetSettings newPlanetSettings) {
+        planetSettings = newPlanetSettings;
+        planetMaterial = Resources.Load<Material>("PlanetMaterial");
+        SetupPlanetSides();
+    }
+
+    /**
+     *
+     */
+    void SetPlanetSides() {
+        // Noise
         List<IPlanetNoise> noiseFilters = new();
-        foreach (NoiseLayer noiseLayerSettings in planetSettings.noiseLayers) {
-            noiseFilters.Add(IPlanetNoise.New(noiseLayerSettings));
+        foreach (NoiseLayer noiseLayer in planetSettings.noiseLayers) {
+            noiseFilters.Add(IPlanetNoise.New(noiseLayer));
         }
+        // Mesh
         _minElevation = float.MaxValue;
         _maxElevation = float.MinValue;
         for (int i = 0; i < _meshFilters.Count; i++) {
             MeshFilter meshFilter = _meshFilters[i];
-            ConstructMesh(meshFilter.sharedMesh, _directions[i], noiseFilters);
+            ConstructPlanetSide(meshFilter.sharedMesh, _directions[i], noiseFilters);
         }
         planetMaterial.SetVector(PlanetGenerator.MinMaxElevationID, new Vector4(_minElevation, _maxElevation));
-        Color[] colors = new Color[textureResolution];
-        for (int i = 0; i < textureResolution; i++) {
-            colors[i] = planetSettings.gradient.Evaluate(i / (textureResolution - 1f));
-        }
-        texture.SetPixels(colors);
-        texture.Apply();
-        planetMaterial.SetTexture(PlanetGenerator.TextureID, texture);
     }
 
     /**
     *
     */
-    void ConstructMesh(Mesh mesh, Vector3 localUp, IReadOnlyList<IPlanetNoise> noiseFilters) {
+    void ConstructPlanetSide(Mesh mesh, Vector3 localUp, IReadOnlyList<IPlanetNoise> noiseFilters) {
         int triangleIndex = 0;
         Vector3 axisA = new(localUp.y, localUp.z, localUp.x);
         Vector3 axisB = Vector3.Cross(localUp, axisA);
@@ -89,6 +90,27 @@ public class Planet : MonoBehaviour {
     }
 
     /**
+     *
+     */
+    void SetupPlanetSides() {
+        while (transform.childCount > 0) {
+            DestroyImmediate(transform.GetChild(0).gameObject);
+        }
+        _meshFilters.Clear();
+        for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
+            GameObject planetSide = new("PlanetSide" + i);
+            planetSide.transform.parent = transform;
+            // Add mesh filter
+            MeshFilter meshFilter = planetSide.AddComponent<MeshFilter>();
+            meshFilter.sharedMesh = new Mesh();
+            _meshFilters.Add(meshFilter);
+            // Add mesh renderer
+            MeshRenderer meshRenderer = planetSide.AddComponent<MeshRenderer>();
+            meshRenderer.sharedMaterial = planetMaterial;
+        }
+    }
+
+    /**
     *
     */
     Vector3 CalculatePointOnPlanet(Vector3 pointOnUnitSphere, IReadOnlyList<IPlanetNoise> noiseFilters) {
@@ -115,22 +137,20 @@ public class Planet : MonoBehaviour {
     /**
      *
      */
-    void InitializePlanetSides() {
-        while (transform.childCount > 0) {
-            DestroyImmediate(transform.GetChild(0).gameObject);
+    void SetBiomeTextures() {
+        int biomesCount = planetSettings.biomes.Count;
+        texture = new Texture2D(PlanetGenerator.PlanetTextureResolution, biomesCount);
+        List<Color> colors = new(texture.width * texture.height);
+        foreach (BiomeSettings biomeSettings in planetSettings.biomes) {
+            for (int i = 0; i < PlanetGenerator.PlanetTextureResolution; i++) {
+                Color gradientColor = biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
+                Color color = gradientColor * (1 - biomeSettings.tintPercent) + biomeSettings.tint * biomeSettings.tintPercent;
+                colors.Add(color);
+            }
         }
-        _meshFilters.Clear();
-        for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
-            GameObject planetSide = new("PlanetSide" + i);
-            planetSide.transform.parent = transform;
-            // Add mesh filter
-            MeshFilter meshFilter = planetSide.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = new Mesh();
-            _meshFilters.Add(meshFilter);
-            // Add mesh renderer
-            MeshRenderer meshRenderer = planetSide.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = planetMaterial;
-        }
+        texture.SetPixels(colors.ToArray());
+        texture.Apply();
+        planetMaterial.SetTexture(PlanetGenerator.TextureID, texture);
     }
 
     /**

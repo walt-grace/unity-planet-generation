@@ -5,8 +5,16 @@ public class Planet : MonoBehaviour {
     [Range(1, 256)]
     public int resolution = 30;
     public int radius = 10;
-    public List<NoiseLayer> noiseLayers = new();
+
+    public List<PlanetNoiseFilter> noiseFilters = new();
+
     public List<BiomeSettings> biomes = new();
+    public PlanetNoiseFilter biomeNoiseFilter;
+    public float biomeNoiseOffset;
+    public float biomeNoiseStrength;
+    [Range(0, 1)]
+    public float biomeBlendAmount;
+
     public Material planetMaterial;
 
     readonly List<MeshFilter> _meshFilters = new(PlanetGenerator.PlanetFaces);
@@ -31,11 +39,6 @@ public class Planet : MonoBehaviour {
     void SetPlanetSides() {
         _minElevation = float.MaxValue;
         _maxElevation = float.MinValue;
-        // Noise
-        List<IPlanetNoiseFilter> noiseFilters = new();
-        foreach (NoiseLayer noiseLayer in noiseLayers) {
-            noiseFilters.Add(IPlanetNoiseFilter.New(noiseLayer));
-        }
         // Mesh
         if (_meshFilters.Count != 6) {
             SetupPlanetSides();
@@ -48,7 +51,7 @@ public class Planet : MonoBehaviour {
     /**
     *
     */
-    void ConstructPlanetSide(Mesh mesh, Vector3 localUp, IReadOnlyList<IPlanetNoiseFilter> noiseFilters) {
+    void ConstructPlanetSide(Mesh mesh, Vector3 localUp, IReadOnlyList<PlanetNoiseFilter> noiseFilters) {
         int triangleIndex = 0;
         Vector3 axisA = new(localUp.y, localUp.z, localUp.x);
         Vector3 axisB = Vector3.Cross(localUp, axisA);
@@ -84,19 +87,19 @@ public class Planet : MonoBehaviour {
     /**
     *
     */
-    Vector3 CalculatePointOnPlanet(Vector3 pointOnSphere, IReadOnlyList<IPlanetNoiseFilter> noiseFilters) {
+    Vector3 CalculatePointOnPlanet(Vector3 pointOnSphere, IReadOnlyList<PlanetNoiseFilter> noiseFilters) {
         float elevation = 0;
         float firstLayerValue = 0;
         // First layer
-        if (noiseLayers is { Count: > 0 } && noiseLayers[0].enabled) {
+        if (this.noiseFilters is { Count: > 0 } && this.noiseFilters[0].enabled) {
             firstLayerValue = noiseFilters[0].Evaluate(pointOnSphere);
             elevation = firstLayerValue;
         }
         // The rest of the layers
-        if (noiseLayers is { Count: > 0 }) {
-            for (int i = 1; i < noiseLayers.Count; i++) {
-                if (!noiseLayers[i].enabled) continue;
-                float mask = noiseLayers[i].useFirstLayerAsMask ? firstLayerValue : 1;
+        if (this.noiseFilters is { Count: > 0 }) {
+            for (int i = 1; i < this.noiseFilters.Count; i++) {
+                if (!this.noiseFilters[i].enabled) continue;
+                float mask = this.noiseFilters[i].useFirstLayerAsMask ? firstLayerValue : 1;
                 elevation += noiseFilters[i].Evaluate(pointOnSphere) * mask;
             }
         }
@@ -118,8 +121,7 @@ public class Planet : MonoBehaviour {
         foreach (BiomeSettings biomeSettings in biomes) {
             for (int i = 0; i < PlanetGenerator.PlanetTextureResolution; i++) {
                 Color gradientColor = biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
-                Color color = gradientColor * (1 - biomeSettings.tintPercent) + biomeSettings.tint * biomeSettings.tintPercent;
-                colors.Add(color);
+                colors.Add(gradientColor);
             }
         }
         texture.SetPixels(colors.ToArray());

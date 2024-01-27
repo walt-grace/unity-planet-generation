@@ -1,4 +1,3 @@
-using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -34,7 +33,9 @@ public class PlanetEditor : Editor {
     Editor _settingsEditor;
 
     void OnEnable() {
-        _planet = (Planet)target;
+        if (target) {
+            _planet = (Planet)target;
+        }
     }
 
     public override void OnInspectorGUI() {

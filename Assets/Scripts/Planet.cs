@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Planet : MonoBehaviour {
-    public string planetName = "Planet";
     [Range(1, 256)]
     public int resolution = 30;
     public int radius = 10;
@@ -38,6 +37,9 @@ public class Planet : MonoBehaviour {
             noiseFilters.Add(IPlanetNoiseFilter.New(noiseLayer));
         }
         // Mesh
+        if (_meshFilters.Count != 6) {
+            SetupPlanetSides();
+        }
         for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
             ConstructPlanetSide(_meshFilters[i].sharedMesh, PlanetGenerator.Directions[i], noiseFilters);
         }
@@ -82,12 +84,12 @@ public class Planet : MonoBehaviour {
     /**
     *
     */
-    Vector3 CalculatePointOnPlanet(Vector3 pointOnUnitSphere, IReadOnlyList<IPlanetNoiseFilter> noiseFilters) {
+    Vector3 CalculatePointOnPlanet(Vector3 pointOnSphere, IReadOnlyList<IPlanetNoiseFilter> noiseFilters) {
         float elevation = 0;
         float firstLayerValue = 0;
         // First layer
         if (noiseLayers is { Count: > 0 } && noiseLayers[0].enabled) {
-            firstLayerValue = noiseFilters[0].Evaluate(pointOnUnitSphere);
+            firstLayerValue = noiseFilters[0].Evaluate(pointOnSphere);
             elevation = firstLayerValue;
         }
         // The rest of the layers
@@ -95,12 +97,12 @@ public class Planet : MonoBehaviour {
             for (int i = 1; i < noiseLayers.Count; i++) {
                 if (!noiseLayers[i].enabled) continue;
                 float mask = noiseLayers[i].useFirstLayerAsMask ? firstLayerValue : 1;
-                elevation += noiseFilters[i].Evaluate(pointOnUnitSphere) * mask;
+                elevation += noiseFilters[i].Evaluate(pointOnSphere) * mask;
             }
         }
         elevation = radius * (elevation + 1);
         SetMinMaxElevation(elevation);
-        return pointOnUnitSphere * elevation;
+        return pointOnSphere * elevation;
     }
 
     /**
@@ -134,7 +136,6 @@ public class Planet : MonoBehaviour {
         Vector2[] uv = new Vector2[resolution * resolution];
         for (int x = 0; x < resolution; x++) {
             for (int y = 0; y < resolution; y++) {
-                if (x == resolution - 1 || y == resolution - 1) continue;
                 int i = x + y * resolution;
                 Vector2 percent = new Vector2(x, y) / (resolution - 1);
                 Vector3 pointOnCube = localUp + (percent.x - .5f) * 2 * axisA + (percent.y - .5f) * 2 * axisB;
@@ -148,8 +149,8 @@ public class Planet : MonoBehaviour {
     /**
      *
      */
-    float CalculateBiomePercentage(Vector3 point) {
-        float heightPercent = (point.y + 1) / 2f;
+    float CalculateBiomePercentage(Vector3 pointOnSphere) {
+        float heightPercent = (pointOnSphere.y + 1) / 2f;
         int biomesCount = biomes.Count;
         for (int i = 0; i < biomesCount; i++) {
             BiomeSettings biomeSettings = biomes[i];
@@ -184,8 +185,9 @@ public class Planet : MonoBehaviour {
             meshFilter.sharedMesh = new Mesh();
             _meshFilters.Add(meshFilter);
             // Add mesh renderer
-            MeshRenderer meshRenderer = planetSide.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = planetMaterial;
+            planetSide.AddComponent<MeshRenderer>().sharedMaterial = planetMaterial;
+            planetSide.AddComponent<Rigidbody>().isKinematic = true;
+            planetSide.AddComponent<MeshCollider>();
         }
     }
 

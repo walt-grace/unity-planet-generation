@@ -6,10 +6,9 @@ public class Planet : MonoBehaviour {
     public int resolution = 30;
     public int radius = 10;
 
+    readonly Noise _noise = new();
     public List<PlanetNoiseFilter> noiseFilters = new();
-
     public List<BiomeSettings> biomes = new();
-    public PlanetNoiseFilter biomeNoiseFilter;
     public float biomeNoiseOffset;
     public float biomeNoiseStrength;
     [Range(0, 1)]
@@ -39,19 +38,18 @@ public class Planet : MonoBehaviour {
     void SetPlanetSides() {
         _minElevation = float.MaxValue;
         _maxElevation = float.MinValue;
-        // Mesh
         if (_meshFilters.Count != 6) {
             SetupPlanetSides();
         }
         for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
-            ConstructPlanetSide(_meshFilters[i].sharedMesh, PlanetGenerator.Directions[i], noiseFilters);
+            ConstructPlanetSide(_meshFilters[i].sharedMesh, PlanetGenerator.Directions[i]);
         }
     }
 
     /**
     *
     */
-    void ConstructPlanetSide(Mesh mesh, Vector3 localUp, IReadOnlyList<PlanetNoiseFilter> noiseFilters) {
+    void ConstructPlanetSide(Mesh mesh, Vector3 localUp) {
         int triangleIndex = 0;
         Vector3 axisA = new(localUp.y, localUp.z, localUp.x);
         Vector3 axisB = Vector3.Cross(localUp, axisA);
@@ -63,7 +61,7 @@ public class Planet : MonoBehaviour {
                 Vector2 percent = new Vector2(x, y) / (resolution - 1);
                 Vector3 pointOnCube = localUp + (percent.x - .5f) * 2 * axisA + (percent.y - .5f) * 2 * axisB;
                 Vector3 pointOnSphere = pointOnCube.normalized;
-                vertices[i] = CalculatePointOnPlanet(pointOnSphere, noiseFilters);
+                vertices[i] = CalculatePointOnPlanet(pointOnSphere);
                 if (x == resolution - 1 || y == resolution - 1) continue;
 
                 // Triangle 1
@@ -87,20 +85,20 @@ public class Planet : MonoBehaviour {
     /**
     *
     */
-    Vector3 CalculatePointOnPlanet(Vector3 pointOnSphere, IReadOnlyList<PlanetNoiseFilter> noiseFilters) {
+    Vector3 CalculatePointOnPlanet(Vector3 pointOnSphere) {
         float elevation = 0;
         float firstLayerValue = 0;
         // First layer
-        if (this.noiseFilters is { Count: > 0 } && this.noiseFilters[0].enabled) {
-            firstLayerValue = noiseFilters[0].Evaluate(pointOnSphere);
+        if (noiseFilters is { Count: > 0 } && noiseFilters[0].enabled) {
+            firstLayerValue = noiseFilters[0].Evaluate(pointOnSphere, _noise);
             elevation = firstLayerValue;
         }
         // The rest of the layers
-        if (this.noiseFilters is { Count: > 0 }) {
-            for (int i = 1; i < this.noiseFilters.Count; i++) {
-                if (!this.noiseFilters[i].enabled) continue;
-                float mask = this.noiseFilters[i].useFirstLayerAsMask ? firstLayerValue : 1;
-                elevation += noiseFilters[i].Evaluate(pointOnSphere) * mask;
+        if (noiseFilters is { Count: > 0 }) {
+            for (int i = 1; i < noiseFilters.Count; i++) {
+                if (!noiseFilters[i].enabled) continue;
+                float mask = noiseFilters[i].useFirstLayerAsMask ? firstLayerValue : 1;
+                elevation += noiseFilters[i].Evaluate(pointOnSphere, _noise) * mask;
             }
         }
         elevation = radius * (elevation + 1);

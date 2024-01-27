@@ -1,15 +1,14 @@
 using System;
 using UnityEngine;
 
-[System.Serializable]
+[Serializable]
 public enum NoiseType {
     Simple,
     Ridge
 }
 
-[System.Serializable]
+[Serializable]
 public class PlanetNoiseFilter {
-    protected readonly Noise Noise = new();
     public bool enabled;
     public NoiseType noiseType;
     public float strength;
@@ -18,10 +17,10 @@ public class PlanetNoiseFilter {
     public Vector3 center;
     public bool useFirstLayerAsMask;
 
-    public float Evaluate(Vector3 point) {
+    public float Evaluate(Vector3 point, Noise noise) {
         return noiseType switch {
-            NoiseType.Simple => EvaluateSimple(point),
-            NoiseType.Ridge => EvaluateRidge(point),
+            NoiseType.Simple => EvaluateSimple(point, noise),
+            NoiseType.Ridge => EvaluateRidge(point, noise),
             _ => 0
         };
     }
@@ -29,9 +28,9 @@ public class PlanetNoiseFilter {
     /**
      *
      */
-    public float EvaluateSimple(Vector3 point) {
+    public float EvaluateSimple(Vector3 point, Noise noise) {
         float noiseValue = 0;
-        float v = Noise.Evaluate(point * roughness + center);
+        float v = noise.Evaluate(point * roughness + center);
         noiseValue += (v + 1) * .5f;
         noiseValue = Mathf.Max(0, noiseValue - minValue);
         return noiseValue * strength;
@@ -40,8 +39,8 @@ public class PlanetNoiseFilter {
     /**
      *
      */
-    public float EvaluateRidge(Vector3 point) {
-        float noiseValue = 1 - Mathf.Abs(Noise.Evaluate(point * roughness + center));
+    public float EvaluateRidge(Vector3 point, Noise noise) {
+        float noiseValue = 1 - Mathf.Abs(noise.Evaluate(point * roughness + center));
         noiseValue *= noiseValue;
         noiseValue = Mathf.Max(0, noiseValue - minValue);
         return noiseValue * strength;

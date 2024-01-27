@@ -15,12 +15,13 @@ public class PlanetGenerator : MonoBehaviour {
     /**
     *
     */
-    public void CreatePlanet(string planetName) {
+    public Planet CreatePlanet(string planetName) {
         GameObject planetGameObject = new(planetName);
         Planet planet = planetGameObject.AddComponent<Planet>();
         planet.InitializePlanet(shader);
         planet.UpdatePlanet();
         Selection.activeObject = planet;
+        return planet;
     }
 
 }

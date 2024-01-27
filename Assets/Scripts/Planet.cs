@@ -60,8 +60,7 @@ public class Planet : MonoBehaviour {
                 int i = x + y * resolution;
                 Vector2 percent = new Vector2(x, y) / (resolution - 1);
                 Vector3 pointOnCube = localUp + (percent.x - .5f) * 2 * axisA + (percent.y - .5f) * 2 * axisB;
-                Vector3 pointOnSphere = pointOnCube.normalized;
-                vertices[i] = CalculatePointOnPlanet(pointOnSphere);
+                vertices[i] = CalculatePointOnPlanet(pointOnCube.normalized);
                 if (x == resolution - 1 || y == resolution - 1) continue;
 
                 // Triangle 1
@@ -125,7 +124,8 @@ public class Planet : MonoBehaviour {
         List<Color> colors = new(texture.width * texture.height);
         foreach (BiomeSettings biomeSettings in biomes) {
             for (int i = 0; i < PlanetGenerator.PlanetTextureResolution; i++) {
-                Color gradientColor = biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
+                Color gradientColor =
+                    biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
                 colors.Add(gradientColor);
             }
         }
@@ -158,14 +158,21 @@ public class Planet : MonoBehaviour {
      */
     float CalculateBiomePercentage(Vector3 point) {
         float pointHeight = (point.y + 1) / 2f;
+        pointHeight += (_noise.Evaluate(point) - biomeNoiseOffset) * biomeNoiseStrength;
         int biomesCount = biomes.Count;
+        float blendRange = biomeBlendAmount / 2;
+        if (blendRange == 0) {
+            blendRange = Mathf.Epsilon;
+        }
+        float biomeFactor = 0;
         for (int i = 0; i < biomesCount; i++) {
             BiomeSettings biomeSettings = biomes[i];
-            if (pointHeight > biomeSettings.startHeight && pointHeight < biomeSettings.endHeight) {
-                return (float) i / Mathf.Max(1, biomesCount - 1);
-            }
+            float destination = pointHeight - biomeSettings.endHeight;
+            float weight = Mathf.InverseLerp(-blendRange, blendRange, destination);
+            biomeFactor *= 1 - weight;
+            biomeFactor += i * weight;
         }
-        return 0;
+        return biomeFactor / Mathf.Max(1, biomesCount - 1);
     }
 
     /**
@@ -208,5 +215,18 @@ public class Planet : MonoBehaviour {
         if (elevation > _maxElevation) {
             _maxElevation = elevation;
         }
+    }
+
+    /**
+     *
+     */
+    static Vector3 SpreadPointOnSphere(Vector3 point) {
+        float x2 = point.x * point.x;
+        float y2 = point.y * point.y;
+        float z2 = point.z * point.z;
+        float x = 1 - y2 / 2 - z2 / 2 + y2 * z2 / 3;
+        float y = 1 - z2 / 2 - x2 / 2 + z2 * x2 / 3;
+        float z = 1 - x2 / 2 - y2 / 2 + x2 * y2 / 3;
+        return new Vector3(point.x * Mathf.Sqrt(x), point.y * Mathf.Sqrt(y), point.z * Mathf.Sqrt(z));
     }
 }

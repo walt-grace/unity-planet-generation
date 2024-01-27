@@ -9,16 +9,19 @@ public class PlanetGeneratorEditor : Editor {
     Editor _settingsEditor;
     string _planetName = "Planet";
     PlanetGenerator _planetGenerator;
+    Camera _mainCamera;
 
     void OnEnable() {
         _planetGenerator = (PlanetGenerator)target;
+        _mainCamera = Camera.main;
     }
 
     public override void OnInspectorGUI() {
         DrawDefaultInspector();
         _planetName = EditorGUILayout.TextField("Planet Name", _planetName);
         if (GUILayout.Button("Generate Planet")) {
-            _planetGenerator.CreatePlanet(_planetName);
+            Planet planet = _planetGenerator.CreatePlanet(_planetName);
+            _mainCamera.transform.LookAt(planet.transform);
             _planetName = "Planet";
         }
     }

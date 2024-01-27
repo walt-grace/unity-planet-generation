@@ -85,25 +85,32 @@ public class Planet : MonoBehaviour {
     /**
     *
     */
-    Vector3 CalculatePointOnPlanet(Vector3 pointOnSphere) {
-        float elevation = 0;
+    Vector3 CalculatePointOnPlanet(Vector3 point) {
+        float elevation = ApplyNoise(point);
+        elevation = radius * (elevation + 1);
+        SetMinMaxElevation(elevation);
+        return point * elevation;
+    }
+
+    /**
+     *
+     */
+    float ApplyNoise(Vector3 point) {
+        float noiseValue = 0;
         float firstLayerValue = 0;
         // First layer
         if (noiseFilters is { Count: > 0 } && noiseFilters[0].enabled) {
-            firstLayerValue = noiseFilters[0].Evaluate(pointOnSphere, _noise);
-            elevation = firstLayerValue;
+            firstLayerValue = noiseFilters[0].Evaluate(point, _noise);
+            noiseValue = firstLayerValue;
         }
         // The rest of the layers
-        if (noiseFilters is { Count: > 0 }) {
-            for (int i = 1; i < noiseFilters.Count; i++) {
-                if (!noiseFilters[i].enabled) continue;
-                float mask = noiseFilters[i].useFirstLayerAsMask ? firstLayerValue : 1;
-                elevation += noiseFilters[i].Evaluate(pointOnSphere, _noise) * mask;
-            }
+        if (noiseFilters is not { Count: > 0 }) return noiseValue;
+        for (int i = 1; i < noiseFilters.Count; i++) {
+            if (!noiseFilters[i].enabled) continue;
+            float mask = noiseFilters[i].useFirstLayerAsMask ? firstLayerValue : 1;
+            noiseValue += noiseFilters[i].Evaluate(point, _noise) * mask;
         }
-        elevation = radius * (elevation + 1);
-        SetMinMaxElevation(elevation);
-        return pointOnSphere * elevation;
+        return noiseValue;
     }
 
     /**
@@ -149,12 +156,12 @@ public class Planet : MonoBehaviour {
     /**
      *
      */
-    float CalculateBiomePercentage(Vector3 pointOnSphere) {
-        float heightPercent = (pointOnSphere.y + 1) / 2f;
+    float CalculateBiomePercentage(Vector3 point) {
+        float pointHeight = (point.y + 1) / 2f;
         int biomesCount = biomes.Count;
         for (int i = 0; i < biomesCount; i++) {
             BiomeSettings biomeSettings = biomes[i];
-            if (biomeSettings.startHeight < heightPercent) {
+            if (pointHeight > biomeSettings.startHeight && pointHeight < biomeSettings.endHeight) {
                 return (float) i / Mathf.Max(1, biomesCount - 1);
             }
         }

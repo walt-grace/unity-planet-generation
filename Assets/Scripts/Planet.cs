@@ -1,36 +1,33 @@
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class Planet : MonoBehaviour {
     [Range(1, 256)]
     public int resolution = 30;
     public int radius = 10;
-
-    readonly Noise _noise = new();
-    public List<PlanetNoiseFilter> noiseFilters = new();
-    public List<BiomeSettings> biomes = new();
-    public float biomeNoiseOffset;
-    public float biomeNoiseStrength;
-    [Range(0, 1)]
-    public float biomeBlendAmount;
-
-    public Material planetMaterial;
-
-    readonly List<MeshFilter> _meshFilters = new(PlanetGenerator.PlanetFaces);
-    public Texture2D texture;
-
     float _minElevation = float.MaxValue;
     float _maxElevation = float.MinValue;
 
+    readonly Noise _noise = new();
+    readonly Biome _biome = new();
+    readonly Orbit _orbit = new();
+    public List<PlanetNoiseFilter> noiseFilters = new();
+    readonly List<MeshFilter> _meshFilters = new(PlanetGenerator.PlanetFaces);
+
+    public Texture2D texture;
+    public Material planetMaterial;
 
     /**
      *
      */
     public void UpdatePlanet() {
+        AddOrbit();
         SetPlanetSides();
         SetBiomeTextures();
         planetMaterial.SetVector(PlanetGenerator.MinMaxElevationID, new Vector4(_minElevation, _maxElevation));
     }
+
 
     /**
      *
@@ -119,10 +116,10 @@ public class Planet : MonoBehaviour {
         for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
             UpdateBiomeUV(_meshFilters[i].sharedMesh, PlanetGenerator.Directions[i]);
         }
-        int biomesCount = biomes.Count;
+        int biomesCount = _biome.biomes.Count;
         texture = new Texture2D(PlanetGenerator.PlanetTextureResolution, biomesCount, TextureFormat.RGBA32, false);
         List<Color> colors = new(texture.width * texture.height);
-        foreach (BiomeSettings biomeSettings in biomes) {
+        foreach (BiomeSettings biomeSettings in _biome.biomes) {
             for (int i = 0; i < PlanetGenerator.PlanetTextureResolution; i++) {
                 Color gradientColor =
                     biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
@@ -158,15 +155,15 @@ public class Planet : MonoBehaviour {
      */
     float CalculateBiomePercentage(Vector3 point) {
         float pointHeight = (point.y + 1) / 2f;
-        pointHeight += (_noise.Evaluate(point) - biomeNoiseOffset) * biomeNoiseStrength;
-        int biomesCount = biomes.Count;
-        float blendRange = biomeBlendAmount / 2;
+        pointHeight += (_noise.Evaluate(point) - _biome.biomeNoiseOffset) * _biome.biomeNoiseStrength;
+        int biomesCount = _biome.biomes.Count;
+        float blendRange = _biome.biomeBlendAmount / 2;
         if (blendRange == 0) {
             blendRange = Mathf.Epsilon;
         }
         float biomeFactor = 0;
         for (int i = 0; i < biomesCount; i++) {
-            BiomeSettings biomeSettings = biomes[i];
+            BiomeSettings biomeSettings = _biome.biomes[i];
             float destination = pointHeight - biomeSettings.endHeight;
             float weight = Mathf.InverseLerp(-blendRange, blendRange, destination);
             biomeFactor *= 1 - weight;
@@ -228,5 +225,38 @@ public class Planet : MonoBehaviour {
         float y = 1 - z2 / 2 - x2 / 2 + z2 * x2 / 3;
         float z = 1 - x2 / 2 - y2 / 2 + x2 * y2 / 3;
         return new Vector3(point.x * Mathf.Sqrt(x), point.y * Mathf.Sqrt(y), point.z * Mathf.Sqrt(z));
+    }
+
+    /**
+    *
+    */
+    [CustomEditor(typeof(Planet))]
+    public class PlanetEditor : Editor {
+        Planet _planet;
+        Editor _settingsEditor;
+
+        void OnEnable() {
+            if (target) {
+                _planet = (Planet)target;
+            }
+        }
+
+        public override void OnInspectorGUI() {
+            DrawDefaultInspector();
+            if (GUI.changed) {
+                _planet.UpdatePlanet();
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    void AddOrbit() {
+        if (!_orbit.orbitPrefab || _orbit.orbitGameObject) return;
+        _orbit.orbitGameObject = Instantiate(_orbit.orbitPrefab, transform);
+        _orbit.orbitGameObject.transform.position = Vector3.zero;
+        _orbit.orbitGameObject.transform.rotation = Quaternion.identity;
+        _orbit.orbitGameObject.transform.localScale = Vector3.one;
     }
 }

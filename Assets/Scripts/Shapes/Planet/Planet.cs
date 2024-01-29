@@ -1,19 +1,19 @@
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-public class Planet : MonoBehaviour {
+public partial class Planet : MonoBehaviour {
     [Range(1, 256)]
     public int resolution = 30;
     public int radius = 10;
-    float _minElevation = float.MaxValue;
-    float _maxElevation = float.MinValue;
+    public List<PlanetNoiseFilter> noiseFilters = new();
 
     readonly Noise _noise = new();
-    readonly Biome _biome = new();
+    public SurfaceTexture surfaceTexture = new();
     readonly Orbit _orbit = new();
-    public List<PlanetNoiseFilter> noiseFilters = new();
     readonly List<MeshFilter> _meshFilters = new(PlanetGenerator.PlanetFaces);
+    float _minElevation = float.MaxValue;
+    float _maxElevation = float.MinValue;
 
     public Texture2D texture;
     public Material planetMaterial;
@@ -116,13 +116,12 @@ public class Planet : MonoBehaviour {
         for (int i = 0; i < PlanetGenerator.PlanetFaces; i++) {
             UpdateBiomeUV(_meshFilters[i].sharedMesh, PlanetGenerator.Directions[i]);
         }
-        int biomesCount = _biome.biomes.Count;
+        int biomesCount = surfaceTexture.biomes.Count;
         texture = new Texture2D(PlanetGenerator.PlanetTextureResolution, biomesCount, TextureFormat.RGBA32, false);
         List<Color> colors = new(texture.width * texture.height);
-        foreach (BiomeSettings biomeSettings in _biome.biomes) {
+        foreach (BiomeSettings biomeSettings in surfaceTexture.biomes) {
             for (int i = 0; i < PlanetGenerator.PlanetTextureResolution; i++) {
-                Color gradientColor =
-                    biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
+                Color gradientColor = biomeSettings.gradient.Evaluate(i / (PlanetGenerator.PlanetTextureResolution - 1f));
                 colors.Add(gradientColor);
             }
         }
@@ -155,15 +154,15 @@ public class Planet : MonoBehaviour {
      */
     float CalculateBiomePercentage(Vector3 point) {
         float pointHeight = (point.y + 1) / 2f;
-        pointHeight += (_noise.Evaluate(point) - _biome.biomeNoiseOffset) * _biome.biomeNoiseStrength;
-        int biomesCount = _biome.biomes.Count;
-        float blendRange = _biome.biomeBlendAmount / 2;
+        pointHeight += (_noise.Evaluate(point) - surfaceTexture.biomeNoiseOffset) * surfaceTexture.biomeNoiseStrength;
+        int biomesCount = surfaceTexture.biomes.Count;
+        float blendRange = surfaceTexture.biomeBlendAmount / 2;
         if (blendRange == 0) {
             blendRange = Mathf.Epsilon;
         }
         float biomeFactor = 0;
         for (int i = 0; i < biomesCount; i++) {
-            BiomeSettings biomeSettings = _biome.biomes[i];
+            BiomeSettings biomeSettings = surfaceTexture.biomes[i];
             float destination = pointHeight - biomeSettings.endHeight;
             float weight = Mathf.InverseLerp(-blendRange, blendRange, destination);
             biomeFactor *= 1 - weight;
@@ -197,8 +196,6 @@ public class Planet : MonoBehaviour {
             _meshFilters.Add(meshFilter);
             // Add mesh renderer
             planetSide.AddComponent<MeshRenderer>().sharedMaterial = planetMaterial;
-            planetSide.AddComponent<Rigidbody>().isKinematic = true;
-            planetSide.AddComponent<MeshCollider>();
         }
     }
 
@@ -225,28 +222,6 @@ public class Planet : MonoBehaviour {
         float y = 1 - z2 / 2 - x2 / 2 + z2 * x2 / 3;
         float z = 1 - x2 / 2 - y2 / 2 + x2 * y2 / 3;
         return new Vector3(point.x * Mathf.Sqrt(x), point.y * Mathf.Sqrt(y), point.z * Mathf.Sqrt(z));
-    }
-
-    /**
-    *
-    */
-    [CustomEditor(typeof(Planet))]
-    public class PlanetEditor : Editor {
-        Planet _planet;
-        Editor _settingsEditor;
-
-        void OnEnable() {
-            if (target) {
-                _planet = (Planet)target;
-            }
-        }
-
-        public override void OnInspectorGUI() {
-            DrawDefaultInspector();
-            if (GUI.changed) {
-                _planet.UpdatePlanet();
-            }
-        }
     }
 
     /**

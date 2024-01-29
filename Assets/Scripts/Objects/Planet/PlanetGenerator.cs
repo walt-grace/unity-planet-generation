@@ -15,9 +15,14 @@ public class PlanetGenerator : MonoBehaviour {
     /**
     *
     */
-    public Planet CreatePlanet(string planetName) {
+    public Planet CreatePlanet(string planetName, bool withCelestialBody) {
         GameObject planetGameObject = new(planetName);
         Planet planet = planetGameObject.AddComponent<Planet>();
+        if (withCelestialBody) {
+            CelestialBody celestialBody = planetGameObject.AddComponent<CelestialBody>();
+            celestialBody.radius = planet.radius;
+            planetGameObject.AddComponent<Rigidbody>().mass = celestialBody.mass;
+        }
         planet.InitializePlanet(shader);
         planet.UpdatePlanet();
         Selection.activeObject = planet;

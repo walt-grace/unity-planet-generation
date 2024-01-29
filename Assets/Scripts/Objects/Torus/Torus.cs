@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Torus : MonoBehaviour {
@@ -20,10 +19,10 @@ public class Torus : MonoBehaviour {
             GameObject circle = new("circle" + i);
             LineRenderer lineRenderer = circle.AddComponent<LineRenderer>();
             circle.transform.parent = transform;
-            lineRenderer.positionCount = segments + 1;
+            lineRenderer.positionCount = segments + 2;
             lineRenderer.widthMultiplier = widthMultiplier;
             float u = (float) i / circlesNumber * 2 * Mathf.PI;
-            for (int j = 0; j < segments + 1; j++) {
+            for (int j = 0; j < segments + 2; j++) {
                 float v = (float) j / segments * 2 * Mathf.PI;
                 Vector3 position = TorusPoint(u, v);
                 lineRenderer.SetPosition(j, position);

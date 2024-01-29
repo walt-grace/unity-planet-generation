@@ -1,8 +1,7 @@
-
+using System;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-[System.Serializable]
+[Serializable]
 public class Orbit {
     public GameObject orbitPrefab;
     public GameObject orbitGameObject;

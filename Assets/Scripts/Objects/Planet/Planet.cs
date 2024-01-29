@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-public partial class Planet : MonoBehaviour {
+public class Planet : MonoBehaviour {
     [Range(1, 256)]
     public int resolution = 30;
     public int radius = 10;
@@ -22,7 +21,6 @@ public partial class Planet : MonoBehaviour {
      *
      */
     public void UpdatePlanet() {
-        AddOrbit();
         SetPlanetSides();
         SetBiomeTextures();
         planetMaterial.SetVector(PlanetGenerator.MinMaxElevationID, new Vector4(_minElevation, _maxElevation));
